@@ -14,52 +14,58 @@ import { multipleUpload } from "./middlewares/multer.js";
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
-app.use(express.json());  // Middleware to parse JSON
+
+app.use(express.json()); // Middleware to parse JSON
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser()); // Middleware for parsing cookies
 
-app.use(cookieParser());
-// middleware
+// Dynamically set allowed origins based on environment
+const allowedOrigins = [
+    'http://localhost:5173', // Local development
+    'https://next-internn-frontend.vercel.app', // Production frontend
+];
 
+// CORS configuration
 const corsOptions = {
-    origin: 'http://localhost:5173',
-    credentials: true
-}
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true); // Allow request
+        } else {
+            callback(new Error("Not allowed by CORS")); // Reject request
+        }
+    },
+    credentials: true, // Allow cookies and credentials
+};
 
-app.use(cors(corsOptions));
+app.use(cors(corsOptions)); // Apply CORS middleware
 
-
-
+// Connect to MongoDB
 connectDB()
     .then(() => {
         console.log("✅ MongoDB Connected");
         app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
     })
     .catch((err) => console.error("❌ MongoDB Connection Error:", err));
- 
 
-// api's
+// Root API route
+app.get("/", (req, res) => {
+    res.status(200).json({ message: "Welcome to the Backend API" });
+});
+
+// API routes
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/user", userRoute);
 app.use("/api/v1/company", companyRoute);
 app.use("/api/v1/job", jobRoute);
 app.use("/api/v1/application", applicationRoute);
 
-// Add root route to avoid 404 on /
-app.get("/", (req, res) => {
-    res.status(200).json({ message: "Welcome to the Backend API" });
-});
-
-// console.log(`🚀 Server running on http://localhost:${PORT}`);
+// 404 Error handler for undefined routes
 app.use((req, res, next) => {
     res.status(404).json({ message: "Route not found" });
 });
 
+// General error handler
 app.use((err, req, res, next) => {
     console.error("Error:", err.stack);
     res.status(500).json({ message: "Something went wrong!" });
 });
-
-// app.listen(PORT,()=>{
-//     connectDB();
-//     console.log(`Server running at port ${PORT}`);
-// })
