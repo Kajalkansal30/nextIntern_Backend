@@ -43,6 +43,12 @@ app.use("/api/v1/user", userRoute);
 app.use("/api/v1/company", companyRoute);
 app.use("/api/v1/job", jobRoute);
 app.use("/api/v1/application", applicationRoute);
+
+// Add root route to avoid 404 on /
+app.get("/", (req, res) => {
+    res.status(200).json({ message: "Welcome to the Backend API" });
+});
+
 // console.log(`🚀 Server running on http://localhost:${PORT}`);
 app.use((req, res, next) => {
     res.status(404).json({ message: "Route not found" });
